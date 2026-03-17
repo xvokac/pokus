@@ -3,11 +3,12 @@ import numpy as np
 from scipy.signal import find_peaks, butter, filtfilt, hilbert
 from scipy.fft import rfft, rfftfreq
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 # --- 1️⃣ Načtení dat z XLSB ---
 file_path = "poskoky.xlsb"
-lower_time = 10
-upper_time = 15
+lower_time = [10, 16.5, 25.6, 33.4, 40.4, 48.6, 55.1, 60, 66, 73.2, 77.7, 83.3, 86.5, 90.5]
+upper_time = [15, 21, 29, 36.5, 43, 5, 59, 63, 70, 76.5, 80.1, 85.6, 89.6, 92.8]
 sheet_name = "List1"
 citlivost = 1   #pokud je upravena citlivost a není změněna konstanta u měřicího zařízení
 
@@ -68,8 +69,11 @@ for col in columns:
 # Přidáme čas do DataFrame
 clean_data["t"] = t
 
-# Omezíme na interval 60–80 s a jen sloupce C a E
-filtered = clean_data.loc[(clean_data["t"] >= lower_time) & (clean_data["t"] <= upper_time), ["t", "1", "2", "3", "4", "5", "6"]]
+if len(lower_time) != len(upper_time):
+    raise ValueError("Počet lower_time a upper_time musí být stejný.")
+
+output_dir = Path("dokmit")
+output_dir.mkdir(exist_ok=True)
 
 ##plt.figure(figsize=(12,5))
 ##plt.plot(filtered["t"], filtered["1"], label="1")
@@ -154,66 +158,85 @@ def log_decrement_from_envelope(t, x, T_d, trim=0.1):
 def delta_to_zeta(Delta):
     return Delta / np.sqrt(4 * np.pi**2 + Delta**2)
 
-# === Example: zpracovat oba kanaly (C a E) v DataFrame 'filtered' ===
 channels = ["1", "2", "3", "4", "5", "6"]
-results = {}
-for ch in channels:
-    t = filtered['t'].to_numpy()
-    x = filtered[ch].to_numpy()
-    x = x - np.mean(x)  # odečíst DC
+results_rows = []
 
-    # 1) odhad dom. frekvence a bandpass (upravit bw podle potřeby, např. 2 Hz)
-    f0 = estimate_dominant_freq(x, Fs)
-    x_filt = bandpass(x, Fs, f0, bw=2.0, order=3)
+for section_idx, (t_min, t_max) in enumerate(zip(lower_time, upper_time), start=1):
+    if t_max < t_min:
+        print(f"Upozornění: výsek #{section_idx} měl t_max < t_min, interval byl prohozen.")
+        t_min, t_max = t_max, t_min
 
-    # 2) peaks method
-    # prominence a distance lze upravit: distance ~= Fs / f0 * 0.5 (min. rozestup mezi vrcholy)
-    distance = int(0.5 * Fs / f0) if f0>0 else None
-    pk = log_decrement_from_peaks(t, x_filt, Fs, prominence=np.std(x_filt)*0.3, distance=distance)
+    filtered = clean_data.loc[(clean_data["t"] >= t_min) & (clean_data["t"] <= t_max), ["t", *channels]]
 
-    # 3) envelope method using T_d from peaks (pokud nejsou vrcholy, spočteme T_d = 1/f0)
-    T_d = pk['T_d'] if (pk is not None and 'T_d' in pk and pk['T_d']>0) else 1.0/f0
-    env_res = log_decrement_from_envelope(t, x_filt, T_d)
+    if filtered.empty:
+        print(f"Výsek #{section_idx} ({t_min}–{t_max} s) je prázdný, přeskakuji.")
+        continue
 
-    # 4) vypočteme zeta
-    Delta_peaks = pk['Delta_mean'] if pk is not None else None
-    zeta_peaks = delta_to_zeta(Delta_peaks) if Delta_peaks is not None else None
-    Delta_env = env_res['Delta']
-    zeta_env = delta_to_zeta(Delta_env)
+    for ch in channels:
+        t = filtered['t'].to_numpy()
+        x = filtered[ch].to_numpy()
+        x = x - np.mean(x)  # odečíst DC
 
-    results[ch] = {
-        'f0': f0,
-        'peak_res': pk,
-        'env_res': env_res,
-        'Delta_peaks': Delta_peaks,
-        'Delta_peaks_std': pk['Delta_std'] if pk is not None else None,
-        'zeta_peaks': zeta_peaks,
-        'Delta_env': Delta_env,
-        'zeta_env': zeta_env
-    }
+        # 1) odhad dom. frekvence a bandpass (upravit bw podle potřeby, např. 2 Hz)
+        f0 = estimate_dominant_freq(x, Fs)
+        x_filt = bandpass(x, Fs, f0, bw=2.0, order=3)
 
-    # quick plots
-    plt.figure(figsize=(10,5))
-    plt.plot(t, x, alpha=0.3, label='raw')
-    plt.plot(t, x_filt, label='bandpassed')
-    ##plt.plot(t, np.abs(hilbert(x_filt)), '--', label='envelope')
-    plt.plot(env_res['t_env'], np.exp(np.polyval(env_res['poly'], env_res['t_env'])),
-         "--", lw=2, label="fitted envelope")
-    if pk is not None:
-        plt.plot(pk['t_peaks'], pk['A'], 'ro', label='used peaks')
-    plt.title(rf"Channel {ch} — $f_0 = {f0:.3f}$ Hz,  $\delta_{{peaks}} = {Delta_peaks:.4f}$, $\zeta_{{peaks}} = {zeta_peaks:.4e}$, $\delta_{{env}} = {Delta_env:.4f}$, $\zeta_{{env}} = {zeta_env:.4e}$")
-    plt.xlabel('t [s]')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(f"{file_path}_{ch}_dokmit.png", dpi=300, bbox_inches="tight")
+        # 2) peaks method
+        # prominence a distance lze upravit: distance ~= Fs / f0 * 0.5 (min. rozestup mezi vrcholy)
+        distance = int(0.5 * Fs / f0) if f0 > 0 else None
+        pk = log_decrement_from_peaks(t, x_filt, Fs, prominence=np.std(x_filt) * 0.3, distance=distance)
 
-plt.show()
+        # 3) envelope method using T_d from peaks (pokud nejsou vrcholy, spočteme T_d = 1/f0)
+        T_d = pk['T_d'] if (pk is not None and 'T_d' in pk and pk['T_d'] > 0) else 1.0 / f0
+        env_res = log_decrement_from_envelope(t, x_filt, T_d)
+
+        if env_res is None:
+            print(f"Výsek #{section_idx}, kanál {ch}: obálku nelze spočítat, přeskakuji.")
+            continue
+
+        # 4) vypočteme zeta
+        Delta_peaks = pk['Delta_mean'] if pk is not None else None
+        zeta_peaks = delta_to_zeta(Delta_peaks) if Delta_peaks is not None else None
+        Delta_env = env_res['Delta']
+        zeta_env = delta_to_zeta(Delta_env)
+
+        results_rows.append({
+            "kanal": ch,
+            "vysek": section_idx,
+            "t_min": t_min,
+            "t_max": t_max,
+            "f0": f0,
+            "Delta_peaks": Delta_peaks,
+            "Delta_peaks_std": pk['Delta_std'] if pk is not None else None,
+            "zeta_peaks": zeta_peaks,
+            "Delta_env": Delta_env,
+            "zeta_env": zeta_env,
+        })
+
+        # quick plots
+        plt.figure(figsize=(10, 5))
+        plt.plot(t, x, alpha=0.3, label='raw')
+        plt.plot(t, x_filt, label='bandpassed')
+        ##plt.plot(t, np.abs(hilbert(x_filt)), '--', label='envelope')
+        plt.plot(env_res['t_env'], np.exp(np.polyval(env_res['poly'], env_res['t_env'])),
+             "--", lw=2, label="fitted envelope")
+        if pk is not None:
+            plt.plot(pk['t_peaks'], pk['A'], 'ro', label='used peaks')
+        plt.title(rf"Channel {ch} (výsek {section_idx}) — $f_0 = {f0:.3f}$ Hz,  $\delta_{{peaks}} = {Delta_peaks:.4f}$, $\zeta_{{peaks}} = {zeta_peaks:.4e}$, $\delta_{{env}} = {Delta_env:.4f}$, $\zeta_{{env}} = {zeta_env:.4e}$")
+        plt.xlabel('t [s]')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(output_dir / f"{Path(file_path).stem}_ch{ch}_vysek{section_idx:02d}_dokmit.png", dpi=300, bbox_inches="tight")
+        plt.close()
+
+results_df = pd.DataFrame(results_rows)
+results_df.to_csv(output_dir / f"{Path(file_path).stem}_dokmit_vysledky.csv", index=False)
 
 # tisk výsledků
-for ch, r in results.items():
-    print(f"=== {ch} ===")
+for _, r in results_df.iterrows():
+    print(f"=== kanál {r['kanal']} | výsek {r['vysek']} ({r['t_min']}–{r['t_max']} s) ===")
     print(f"dominant f0 = {r['f0']:.3f} Hz")
-    if r['Delta_peaks'] is not None:
+    if pd.notna(r['Delta_peaks']):
         print(f"Delta (peaks) = {r['Delta_peaks']:.5f} ± {r['Delta_peaks_std']:.5f}")
         print(f"zeta (peaks)  = {r['zeta_peaks']:.5e}")
     print(f"Delta (envelope fit) = {r['Delta_env']:.5f}")
