@@ -8,7 +8,7 @@ from pathlib import Path
 # --- 1️⃣ Načtení dat z XLSB ---
 file_path = "poskoky.xlsb"
 lower_time = [10, 16.5, 25.6, 33.4, 40.4, 48.6, 55.1, 60, 66, 73.2, 77.7, 83.3, 86.5, 90.5]
-upper_time = [15, 21, 29, 36.5, 43, 5, 59, 63, 70, 76.5, 80.1, 85.6, 89.6, 92.8]
+upper_time = [15, 21, 29, 36.5, 43, 53, 59, 63, 70, 76.5, 80.1, 85.6, 89.6, 92.8]
 sheet_name = "List1"
 citlivost = 1   #pokud je upravena citlivost a není změněna konstanta u měřicího zařízení
 
