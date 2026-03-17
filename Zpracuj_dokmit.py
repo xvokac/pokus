@@ -230,7 +230,7 @@ for section_idx, (t_min, t_max) in enumerate(zip(lower_time, upper_time), start=
         plt.close()
 
 results_df = pd.DataFrame(results_rows)
-results_df.to_csv(output_dir / f"{Path(file_path).stem}_dokmit_vysledky.csv", index=False)
+results_df.to_csv(output_dir / f"{Path(file_path).stem}_dokmit_vysledky.csv", index=False, sep=';')
 
 # tisk výsledků
 for _, r in results_df.iterrows():
@@ -241,5 +241,4 @@ for _, r in results_df.iterrows():
         print(f"zeta (peaks)  = {r['zeta_peaks']:.5e}")
     print(f"Delta (envelope fit) = {r['Delta_env']:.5f}")
     print(f"zeta (envelope)      = {r['zeta_env']:.5e}")
-
 
