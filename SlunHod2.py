@@ -101,13 +101,35 @@ fig, axs = plt.subplots(1, 3, figsize=(15,5))
 # =========================
 ax = axs[0]
 
-roman_hours = {
-    6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI",
-    12: "XII", 13: "XIII", 14: "XIV", 15: "XV", 16: "XVI",
-    17: "XVII", 18: "XVIII"
-}
+def to_roman(number):
+    vals = [
+        (1000, "M"), (900, "CM"), (500, "D"), (400, "CD"),
+        (100, "C"), (90, "XC"), (50, "L"), (40, "XL"),
+        (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I")
+    ]
+    result = []
+    n = number
+    for value, symbol in vals:
+        while n >= value:
+            result.append(symbol)
+            n -= value
+    return "".join(result)
 
-for hour in range(6, 19):
+
+def is_hour_visible(hour):
+    """Vrací True, pokud se hodinová čára může během roku objevit na stěně."""
+    H = np.deg2rad(15 * (hour - 12))
+    for delta_deg in np.linspace(-23.44, 23.44, 361):
+        delta = np.deg2rad(delta_deg)
+        S = sun_vector(H, delta)
+        # Slunce musí být nad horizontem.
+        if S[2] <= 0:
+            continue
+        if shadow_point(H, delta) is not None:
+            return True
+    return False
+
+for hour in range(1, 24):
     H = np.deg2rad(15 * (hour - 12))
 
     # Hodinová rovina je určena osou Země (gnómonem) a směrem Slunce
@@ -121,8 +143,8 @@ for hour in range(6, 19):
     p = to2D(d)
     p /= np.linalg.norm(p)
 
-    # Hodinové čáry kreslíme pouze jako polopřímky od paty gnómonu:
-    # VI–XI vlevo (x < 0), XII dolů (y < 0), XIII–XVIII vpravo (x > 0).
+    # Hodinové čáry kreslíme jako polopřímky od paty gnómonu:
+    # I–XI vlevo (x < 0), XII dolů (y < 0), XIII–XXIII vpravo (x > 0).
     extent = 3.0
     if hour <= 11:
         sign = -1.0 if p[0] > 0 else 1.0
@@ -132,6 +154,12 @@ for hour in range(6, 19):
         sign = 1.0 if p[0] > 0 else -1.0
 
     ray_dir = sign * p
+    # Vykreslujeme jen čáry směřující do dolní poloviny ciferníku (y < 0)
+    # a jen ty, které mohou být během roku reálně osvětlené.
+    if ray_dir[1] >= 0:
+        continue
+    if not is_hour_visible(hour):
+        continue
 
     t_limits = []
     if abs(ray_dir[0]) > 1e-12:
@@ -147,7 +175,7 @@ for hour in range(6, 19):
     ax.plot([0.0, endpoint[0]], [0.0, endpoint[1]], 'k-')
 
     label_pos = endpoint * 1.05
-    ax.text(label_pos[0], label_pos[1], roman_hours[hour],
+    ax.text(label_pos[0], label_pos[1], to_roman(hour),
             ha='center', va='center', fontsize=9)
 
 
