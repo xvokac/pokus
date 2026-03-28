@@ -228,10 +228,8 @@ ax.legend()
 ax = axs[1]
 
 # projekce do XY roviny
-Gn = np.array([-G[0], -G[1]])
-# V půdorysu chceme směr normály vůči stěně kreslit opačně,
-# než je interní orientace normály použitá ve výpočtech stínu.
-nn = np.array([-n[0], -n[1]])
+Gn = np.array([G[0], -G[1]])
+nn = np.array([-n[0], n[1]])
 
 # normála stěny
 ax.plot([0, nn[0]], [0, nn[1]], 'k--', label="normála stěny")
