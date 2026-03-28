@@ -170,7 +170,7 @@ Gn = np.array([-G[0], -G[1]])
 nn = np.array([n[0], n[1]])
 
 # normála stěny
-ax.plot([0, nn[0]], [0, nn[1]], 'k-', label="normála stěny")
+ax.plot([0, nn[0]], [0, nn[1]], 'k--', label="normála stěny")
 
 # gnómon
 ax.plot([0, Gn[0]], [0, Gn[1]], 'r-', label="gnómon")
@@ -178,7 +178,7 @@ ax.plot([0, Gn[0]], [0, Gn[1]], 'r-', label="gnómon")
 # stěna = kolmice na normálu
 wall_dir = np.array([-nn[1], nn[0]])
 ax.plot([-wall_dir[0], wall_dir[0]],
-        [-wall_dir[1], wall_dir[1]], 'k--', label="stěna")
+        [-wall_dir[1], wall_dir[1]], 'k-', label="stěna")
 
 ax.set_title("Půdorys")
 ax.set_aspect('equal')
@@ -197,13 +197,13 @@ g_normal = np.dot(G, n)
 g_height = G[2]
 
 # svislice
-ax.plot([0,0], [0,1], 'k--', label="svislice")
+ax.plot([0,0], [0,1], 'k--')
 
 # gnómon
 ax.plot([0, -g_normal], [0, -g_height], 'r-', label="gnómon")
 
 # stěna
-ax.plot([0,0], [-1,1], 'k-', linewidth=2)
+ax.plot([0,0], [-1,1], 'k-', linewidth=2, label="stěna")
 
 ax.set_title("Bokorys")
 ax.set_aspect('equal')
