@@ -133,12 +133,14 @@ def shadow_point(H, delta):
 # =========================
 # FIGURY
 # =========================
-fig, axs = plt.subplots(1, 3, figsize=(15,5))
+fig_wall, ax_wall = plt.subplots(figsize=(6, 6))
+fig_top, ax_top = plt.subplots(figsize=(6, 6))
+fig_side, ax_side = plt.subplots(figsize=(6, 6))
 
 # =========================
 # 1️⃣ SLUNEČNÍ HODINY
 # =========================
-ax = axs[0]
+ax = ax_wall
 displayed_hour_angles_deg = []
 
 def to_roman(number):
@@ -287,7 +289,7 @@ ax.legend()
 # =========================
 # 2️⃣ PŮDORYS (TOP VIEW)
 # =========================
-ax = axs[1]
+ax = ax_top
 
 # projekce do XY roviny
 Gn = np.array([G[0], -G[1]])
@@ -312,7 +314,7 @@ ax.legend()
 # =========================
 # 3️⃣ BOKORYS (SIDE VIEW)
 # =========================
-ax = axs[2]
+ax = ax_side
 
 def to_side(P):
     """2D souřadnice v bokorysu: x = vzdálenost od stěny, y = výška."""
@@ -356,5 +358,6 @@ ax.set_aspect('equal')
 ax.legend()
 
 
-plt.tight_layout()
+for fig in (fig_wall, fig_top, fig_side):
+    fig.tight_layout()
 plt.show()
