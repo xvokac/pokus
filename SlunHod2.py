@@ -37,7 +37,7 @@ def to2D(P):
 def sun_vector(H, delta):
     return np.array([
         np.cos(delta)*np.sin(H),
-        np.cos(delta)*np.cos(H),
+        -np.cos(delta)*np.cos(H),
         np.sin(delta)
     ])
 
@@ -50,13 +50,13 @@ def shadow_point(H, delta):
     if abs(denom) < 1e-12:
         return None
 
-    # Průsečík přímky G - λS se stěnou n·P = 0.
-    # (S je směr ke Slunci, stín jde opačným směrem.)
-    t = np.dot(n, G) / denom
+    # Průsečík přímky G + λS se stěnou n·P = 0.
+    # (S je směr od pozorovatele ke Slunci.)
+    t = -np.dot(n, G) / denom
     if t <= 0:
         return None
 
-    return G - t * S
+    return G + t * S
 
 
 
