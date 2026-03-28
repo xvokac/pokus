@@ -47,10 +47,16 @@ def shadow_point(H, delta):
     S = sun_vector(H, delta)
 
     denom = np.dot(n, S)
+    if abs(denom) < 1e-12:
+        return None
 
-    t = -np.dot(-n, G) / denom
+    # Průsečík přímky G - λS se stěnou n·P = 0.
+    # (S je směr ke Slunci, stín jde opačným směrem.)
+    t = np.dot(n, G) / denom
+    if t <= 0:
+        return None
 
-    return G + t * (S)
+    return G - t * S
 
 
 
@@ -90,21 +96,41 @@ for h in range(-6, 7):
             ha='center', fontsize=9)
 
 
-# křivky
-for d, name in [(np.rad2deg(phi)-23.5,"Zima"),
-                (np.rad2deg(phi),"Rovnodennost"),
-                (np.rad2deg(phi)+23.5,"Léto"),
-                (0,"Horizont")]:
+# křivky (pro fixní deklinaci δ)
+for d, name in [(-23.44, "Zima"),
+                (0.0, "Rovnodennost"),
+                (23.44, "Léto")]:
     pts = []
     for h in np.linspace(-90, 90, 400):
         P = shadow_point(np.deg2rad(h), np.deg2rad(d))
         if P is None:
+            continue
+        # Slunce musí být nad horizontem
+        if sun_vector(np.deg2rad(h), np.deg2rad(d))[2] <= 0:
             continue
         pts.append(to2D(P))
 
     if len(pts) > 2:
         pts = np.array(pts)
         ax.plot(pts[:,0], pts[:,1], label=name)
+
+# horizont: body, kdy je výška Slunce 0°.
+horizon_pts = []
+for h in np.linspace(-179.5, 179.5, 2000):
+    H = np.deg2rad(h)
+    if abs(np.cos(H)) < 1e-6:
+        continue
+    delta = np.arctan(-np.cos(phi) * np.cos(H) / np.sin(phi))
+    P = shadow_point(H, delta)
+    if P is None:
+        continue
+    if sun_vector(H, delta)[1] >= 0:
+        continue
+    horizon_pts.append(to2D(P))
+
+if len(horizon_pts) > 2:
+    horizon_pts = np.array(horizon_pts)
+    ax.plot(horizon_pts[:,0], horizon_pts[:,1], label="Horizont")
 
 # gnómon
 g2 = to2D(G)
