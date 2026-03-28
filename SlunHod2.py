@@ -41,7 +41,7 @@ L = 1.0  # délka gnómonu
 # =========================
 # ZÁKLADNÍ VEKTORY
 # =========================
-n = np.array([np.sin(D), -np.cos(D), 0])   # normála stěny
+n = np.array([-np.sin(D), -np.cos(D), 0])   # normála stěny
 G = np.array([0, np.cos(phi), np.sin(phi)])  # gnómon
 
 # =========================
@@ -121,19 +121,52 @@ for hour in range(6, 19):
     p = to2D(d)
     p /= np.linalg.norm(p)
 
-    # Vykreslit jen spodní část hodinových čar (y <= 0).
-    if p[1] > 0:
-        p = -p
+    # Pro nenulový azimut mohou krajní hodinové čáry stoupat.
+    # Proto nevykreslujeme jen jednu "spodní" polopřímku, ale celou
+    # přímku oříznutou obdélníkem ciferníku.
+    extent = 3.0
+    candidates = []
 
-    # Protáhnout čáry až na hranici obdélníku: -3 < x < 3, -3 < y < 0.
-    tx = np.inf if abs(p[0]) < 1e-12 else 3.0 / abs(p[0])
-    ty = np.inf if abs(p[1]) < 1e-12 else 3.0 / abs(p[1])
-    Lline = min(tx, ty)
+    if abs(p[0]) > 1e-12:
+        for xedge in (-extent, extent):
+            t = xedge / p[0]
+            y = t * p[1]
+            if -extent - 1e-12 <= y <= extent + 1e-12:
+                candidates.append(np.array([xedge, y]))
 
-    ax.plot([0, p[0] * Lline], [0, p[1] * Lline], 'k-')
+    if abs(p[1]) > 1e-12:
+        for yedge in (-extent, extent):
+            t = yedge / p[1]
+            x = t * p[0]
+            if -extent - 1e-12 <= x <= extent + 1e-12:
+                candidates.append(np.array([x, yedge]))
 
-    label_scale = min(Lline * 1.05, Lline + 0.2)
-    ax.text(p[0] * label_scale, p[1] * label_scale, roman_hours[hour],
+    unique_pts = []
+    for pt in candidates:
+        if not any(np.allclose(pt, existing, atol=1e-9) for existing in unique_pts):
+            unique_pts.append(pt)
+
+    if len(unique_pts) < 2:
+        continue
+
+    # Vezmeme dvě nejvzdálenější průsečnice = segment uvnitř ciferníku.
+    max_i, max_j = 0, 1
+    max_dist = -1.0
+    for i in range(len(unique_pts)):
+        for j in range(i + 1, len(unique_pts)):
+            dist = np.linalg.norm(unique_pts[i] - unique_pts[j])
+            if dist > max_dist:
+                max_dist = dist
+                max_i, max_j = i, j
+
+    a = unique_pts[max_i]
+    b = unique_pts[max_j]
+    ax.plot([a[0], b[0]], [a[1], b[1]], 'k-')
+
+    # Popisek dáme ke vzdálenějšímu konci od středu.
+    label_anchor = a if np.linalg.norm(a) >= np.linalg.norm(b) else b
+    label_pos = label_anchor * 1.05
+    ax.text(label_pos[0], label_pos[1], roman_hours[hour],
             ha='center', va='center', fontsize=9)
 
 
