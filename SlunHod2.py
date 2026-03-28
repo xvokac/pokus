@@ -11,32 +11,38 @@ import matplotlib.pyplot as plt
 def parse_args(argv):
     default_lat = 50.0
     default_azimuth = 0.0
+    default_gnomon_length = 1.0
 
-    if len(argv) == 3:
+    if len(argv) in (3, 4):
         try:
             lat = float(argv[1])
             azimuth = float(argv[2])
-            return lat, azimuth
+            gnomon_length = float(argv[3]) if len(argv) == 4 else default_gnomon_length
+            return lat, azimuth, gnomon_length
         except ValueError:
             print("Neplatné argumenty – očekávám čísla.")
     elif len(argv) != 1:
         print("Špatný počet argumentů.")
 
-    print("Použití: python SlunHod2.py <zeměpisná_šířka_N> <azimut_stěny>")
+    print("Použití: python SlunHod2.py <zeměpisná_šířka_N> <azimut_stěny> [délka_gnómu]")
     print("  <zeměpisná_šířka_N>: severní zeměpisná šířka ve stupních (např. 49.5)")
     print("  <azimut_stěny>: azimut stěny ve stupních, 0 = jih,")
     print("                  kladné hodnoty směrem k západu, záporné k východu")
-    print(f"Spouštím s implicitními hodnotami: {default_lat} a {default_azimuth}.\n")
+    print("  [délka_gnómu]: délka gnómu (volitelné, implicitně 1)")
+    print(
+        "Spouštím s implicitními hodnotami: "
+        f"{default_lat}, {default_azimuth} a {default_gnomon_length}.\n"
+    )
 
-    return default_lat, default_azimuth
+    return default_lat, default_azimuth, default_gnomon_length
 
 
-lat_deg, azimuth_deg = parse_args(sys.argv)
+lat_deg, azimuth_deg, gnomon_length = parse_args(sys.argv)
 
 phi = np.deg2rad(lat_deg)   # zeměpisná šířka
 D   = np.deg2rad(azimuth_deg)   # azimut stěny (0 = jih)
 
-L = 1.0  # délka gnómonu
+L = gnomon_length  # délka gnómonu
 
 
 def wall_equator_horizon_angle(phi_rad, azimuth_rad):
@@ -75,7 +81,7 @@ print()
 # ZÁKLADNÍ VEKTORY
 # =========================
 n = np.array([np.sin(D), -np.cos(D), 0])   # normála stěny
-G = np.array([0, np.cos(phi), np.sin(phi)])  # gnómon
+G = L * np.array([0, np.cos(phi), np.sin(phi)])  # gnómon
 
 # =========================
 # SOUSTAVA NA STĚNĚ
