@@ -308,6 +308,10 @@ ax.legend()
 # =========================
 ax = axs[2]
 
+def to_side(P):
+    """2D souřadnice v bokorysu: x = vzdálenost od stěny, y = výška."""
+    return np.array([-np.dot(P, n), -P[2]])
+
 # vzdálenost od stěny (projekce do normály)
 g_normal = np.dot(G, n)
 
@@ -322,6 +326,24 @@ ax.plot([0, -g_normal], [0, -g_height], 'r-', label="gnómon")
 
 # stěna
 ax.plot([0,0], [-1,1], 'k-', linewidth=2, label="stěna")
+
+# body na polední (XII) poloze
+# H = 0 odpovídá slunečnímu poledni
+delta_horizon = phi - np.pi / 2
+side_markers = [
+    ("Horizont", delta_horizon, "tab:gray"),
+    ("Rovník", 0.0, "tab:blue"),
+    ("Zima", np.deg2rad(-23.44), "tab:cyan"),
+    ("Léto", np.deg2rad(23.44), "tab:orange"),
+]
+
+for label, delta, color in side_markers:
+    P = shadow_point(0.0, delta)
+    if P is None:
+        continue
+    P2 = to_side(P)
+    ax.plot(P2[0], P2[1], marker='o', color=color, markersize=5)
+    ax.text(P2[0] + 0.05, P2[1], label, color=color, fontsize=9, va='center')
 
 ax.set_title("Bokorys")
 ax.set_aspect('equal')
