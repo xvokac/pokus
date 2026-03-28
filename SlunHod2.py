@@ -298,7 +298,7 @@ wall_dir = np.array([-nn[1], nn[0]])
 ax.plot([-wall_dir[0], wall_dir[0]],
         [-wall_dir[1], wall_dir[1]], 'k-', label="stěna")
 
-ax.set_title("Půdorys")
+ax.set_title("Půdorys (gnómon směřuje k jihu)")
 ax.set_aspect('equal')
 ax.legend()
 
