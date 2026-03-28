@@ -41,7 +41,7 @@ L = 1.0  # délka gnómonu
 # =========================
 # ZÁKLADNÍ VEKTORY
 # =========================
-n = np.array([-np.sin(D), -np.cos(D), 0])   # normála stěny
+n = np.array([np.sin(D), -np.cos(D), 0])   # normála stěny
 G = np.array([0, np.cos(phi), np.sin(phi)])  # gnómon
 
 # =========================
@@ -229,7 +229,9 @@ ax = axs[1]
 
 # projekce do XY roviny
 Gn = np.array([-G[0], -G[1]])
-nn = np.array([n[0], n[1]])
+# V půdorysu chceme směr normály vůči stěně kreslit opačně,
+# než je interní orientace normály použitá ve výpočtech stínu.
+nn = np.array([-n[0], -n[1]])
 
 # normála stěny
 ax.plot([0, nn[0]], [0, nn[1]], 'k--', label="normála stěny")
