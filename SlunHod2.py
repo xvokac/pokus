@@ -38,6 +38,39 @@ D   = np.deg2rad(azimuth_deg)   # azimut stěny (0 = jih)
 
 L = 1.0  # délka gnómonu
 
+
+def wall_equator_horizon_angle(phi_rad, azimuth_rad):
+    """Úhel mezi rovníkem a horizontem přímo na stěně.
+
+    Geometricky jde o úhel mezi průsečnicí stěny s rovinou rovníku
+    a průsečnicí stěny s horizontální rovinou.
+    """
+    sin_phi = np.sin(phi_rad)
+    cos_phi = np.cos(phi_rad)
+    sin_D = np.sin(azimuth_rad)
+
+    numerator = abs(sin_D * cos_phi)
+    denominator = abs(sin_phi)
+    return np.arctan2(numerator, denominator)
+
+
+angle_exact_deg = np.rad2deg(wall_equator_horizon_angle(phi, D))
+approx_coeff = np.inf if np.isclose(np.tan(phi), 0.0) else 1.0 / np.tan(phi)
+angle_approx_deg = abs(azimuth_deg) * approx_coeff
+
+print("Kontrola vztahu pro nenulový azimut:")
+print(f"  Zeměpisná šířka φ = {lat_deg:.3f}°")
+print(f"  Azimut stěny D = {azimuth_deg:.3f}°")
+print(f"  Přesný úhel (rovník–horizont na stěně) = {angle_exact_deg:.3f}°")
+if np.isfinite(angle_approx_deg):
+    print(
+        "  Maloúhlová aproximace: "
+        f"α ≈ |D|·cot(φ) = {approx_coeff:.3f}·|D| = {angle_approx_deg:.3f}°"
+    )
+else:
+    print("  Maloúhlová aproximace α ≈ |D|·cot(φ) zde není použitelná (cot(φ) → ∞).")
+print()
+
 # =========================
 # ZÁKLADNÍ VEKTORY
 # =========================
