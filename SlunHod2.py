@@ -81,13 +81,14 @@ roman_hours = {
 for hour in range(6, 19):
     H = np.deg2rad(15 * (hour - 12))
 
-    nh = np.array([
-        np.sin(H),
-        np.cos(H) * np.sin(phi),
-        np.cos(H) * np.cos(phi)
-    ])
+    # Hodinová rovina je určena osou Země (gnómonem) a směrem Slunce
+    # pro daný hodinový úhel. Pro výpočet normály hodinové roviny stačí
+    # použít libovolnou deklinaci; zde volíme rovnodennost (delta = 0).
+    s_eq = sun_vector(H, 0.0)
+    hour_plane_normal = np.cross(G, s_eq)
 
-    d = np.cross(n, nh)
+    # Směr hodinové čáry na stěně je průsečnice stěny a hodinové roviny.
+    d = np.cross(n, hour_plane_normal)
     p = to2D(d)
     p /= np.linalg.norm(p)
 
