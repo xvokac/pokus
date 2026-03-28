@@ -152,7 +152,7 @@ if len(horizon_pts) > 2:
 g2 = to2D(G)
 ax.plot([0, g2[0]], [0, g2[1]], 'r-', linewidth=2)
 
-ax.set_title("Stěna (front view)")
+ax.set_title("Stěna (pohled)")
 ax.set_aspect('equal')
 ax.set_xlim(-4, 4)
 ax.set_ylim(-4, 4)
