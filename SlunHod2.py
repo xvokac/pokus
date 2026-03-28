@@ -83,22 +83,27 @@ for hour in range(6, 19):
 
     nh = np.array([
         np.sin(H),
-        np.cos(H)*np.sin(phi),
-        np.cos(H)*np.cos(phi)
+        np.cos(H) * np.sin(phi),
+        np.cos(H) * np.cos(phi)
     ])
 
     d = np.cross(n, nh)
     p = to2D(d)
     p /= np.linalg.norm(p)
 
-    # Vykreslit jen spodní část hodinových čar (pod přímkou 6–18 h).
+    # Vykreslit jen spodní část hodinových čar (y <= 0).
     if p[1] > 0:
         p = -p
 
-    Lline = 2.0
+    # Protáhnout čáry až na hranici obdélníku: -3 < x < 3, -3 < y < 0.
+    tx = np.inf if abs(p[0]) < 1e-12 else 3.0 / abs(p[0])
+    ty = np.inf if abs(p[1]) < 1e-12 else 3.0 / abs(p[1])
+    Lline = min(tx, ty)
+
     ax.plot([0, p[0] * Lline], [0, p[1] * Lline], 'k-')
 
-    ax.text(p[0] * 2.2, p[1] * 2.2, roman_hours[hour],
+    label_scale = min(Lline * 1.05, Lline + 0.2)
+    ax.text(p[0] * label_scale, p[1] * label_scale, roman_hours[hour],
             ha='center', va='center', fontsize=9)
 
 
@@ -148,8 +153,8 @@ ax.plot([0, g2[0]], [0, g2[1]], 'r-', linewidth=2)
 
 ax.set_title("Stěna (front view)")
 ax.set_aspect('equal')
-ax.set_xlim(-3, 3)
-ax.set_ylim(-3, 3)
+ax.set_xlim(-4, 4)
+ax.set_ylim(-4, 1)
 ax.axhline(0, linewidth=0.5)
 ax.axvline(0, linewidth=0.5)
 ax.legend()
