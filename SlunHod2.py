@@ -35,10 +35,12 @@ def to2D(P):
 # SLUNCE
 # =========================
 def sun_vector(H, delta):
+    # Lokální soustava: x=východ, y=sever, z=nahoru.
+    # H ... hodinový úhel (kladný na západ), delta ... deklinace Slunce.
     return np.array([
-        np.cos(delta)*np.sin(H),
-        -np.cos(delta)*np.cos(H),
-        np.sin(delta)
+        np.cos(delta) * np.sin(H),
+        np.cos(phi) * np.sin(delta) - np.sin(phi) * np.cos(delta) * np.cos(H),
+        np.sin(phi) * np.sin(delta) + np.cos(phi) * np.cos(delta) * np.cos(H)
     ])
 
 
