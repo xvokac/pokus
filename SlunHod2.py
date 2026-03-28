@@ -1,11 +1,40 @@
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 # =========================
 # PARAMETRY
 # =========================
-phi = np.deg2rad(50.0)   # zeměpisná šířka
-D   = np.deg2rad(0.0)   # azimut stěny (0 = jih)
+
+
+def parse_args(argv):
+    default_lat = 50.0
+    default_azimuth = 0.0
+
+    if len(argv) == 3:
+        try:
+            lat = float(argv[1])
+            azimuth = float(argv[2])
+            return lat, azimuth
+        except ValueError:
+            print("Neplatné argumenty – očekávám čísla.")
+    elif len(argv) != 1:
+        print("Špatný počet argumentů.")
+
+    print("Použití: python SlunHod2.py <zeměpisná_šířka_N> <azimut_stěny>")
+    print("  <zeměpisná_šířka_N>: severní zeměpisná šířka ve stupních (např. 49.5)")
+    print("  <azimut_stěny>: azimut stěny ve stupních, 0 = jih,")
+    print("                  kladné hodnoty směrem k západu, záporné k východu")
+    print(f"Spouštím s implicitními hodnotami: {default_lat} a {default_azimuth}.\n")
+
+    return default_lat, default_azimuth
+
+
+lat_deg, azimuth_deg = parse_args(sys.argv)
+
+phi = np.deg2rad(lat_deg)   # zeměpisná šířka
+D   = np.deg2rad(azimuth_deg)   # azimut stěny (0 = jih)
 
 L = 1.0  # délka gnómonu
 
