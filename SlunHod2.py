@@ -133,6 +133,7 @@ fig, axs = plt.subplots(1, 3, figsize=(15,5))
 # 1️⃣ SLUNEČNÍ HODINY
 # =========================
 ax = axs[0]
+displayed_hour_angles_deg = []
 
 def to_roman(number):
     vals = [
@@ -206,11 +207,21 @@ for hour in range(1, 24):
     endpoint = ray_dir * t_end
 
     ax.plot([0.0, endpoint[0]], [0.0, endpoint[1]], 'k-')
+    displayed_hour_angles_deg.append(np.rad2deg(H))
 
     label_pos = endpoint * 1.05
     ax.text(label_pos[0], label_pos[1], to_roman(hour),
             ha='center', va='center', fontsize=9)
 
+
+# Rozsah hodin pro doplňkové křivky odvodíme z hodin skutečně zobrazených
+# v ciferníku (ne pevně VI–XVIII).
+if displayed_hour_angles_deg:
+    min_hour_angle_deg = min(displayed_hour_angles_deg)
+    max_hour_angle_deg = max(displayed_hour_angles_deg)
+else:
+    min_hour_angle_deg = -90.0
+    max_hour_angle_deg = 90.0
 
 # křivky (pro fixní deklinaci δ)
 all_front_points = []
@@ -218,7 +229,7 @@ for d, name in [(-23.44, "Zima"),
                 (0.0, "Rovnodennost"),
                 (23.44, "Léto")]:
     pts = []
-    for h in np.linspace(-90, 90, 400):
+    for h in np.linspace(min_hour_angle_deg, max_hour_angle_deg, 400):
         P = shadow_point(np.deg2rad(h), np.deg2rad(d))
         if P is None:
             continue
@@ -242,6 +253,9 @@ for d in np.linspace(-23.44, 23.44, 800):
 
     H0 = np.arccos(arg)
     for H in (-H0, H0):
+        H_deg = np.rad2deg(H)
+        if H_deg < min_hour_angle_deg or H_deg > max_hour_angle_deg:
+            continue
         P = shadow_point(H, delta)
         if P is None:
             continue
