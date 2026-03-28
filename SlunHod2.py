@@ -72,8 +72,14 @@ fig, axs = plt.subplots(1, 3, figsize=(15,5))
 # =========================
 ax = axs[0]
 
-for h in range(-6, 7):
-    H = np.deg2rad(15*h)
+roman_hours = {
+    6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI",
+    12: "XII", 13: "XIII", 14: "XIV", 15: "XV", 16: "XVI",
+    17: "XVII", 18: "XVIII"
+}
+
+for hour in range(6, 19):
+    H = np.deg2rad(15 * (hour - 12))
 
     nh = np.array([
         np.sin(H),
@@ -85,17 +91,15 @@ for h in range(-6, 7):
     p = to2D(d)
     p /= np.linalg.norm(p)
 
+    # Vykreslit jen spodní část hodinových čar (pod přímkou 6–18 h).
+    if p[1] > 0:
+        p = -p
+
     Lline = 2.0
-    ax.plot([-p[0]*Lline, p[0]*Lline],
-            [-p[1]*Lline, p[1]*Lline], 'k-')
+    ax.plot([0, p[0] * Lline], [0, p[1] * Lline], 'k-')
 
-
-    hour = (6 + h) % 24
-    if  hour == 0:
-        hour = 12
-
-    ax.text(p[0]*2.2, p[1]*2.2, str(hour),
-            ha='center', fontsize=9)
+    ax.text(p[0] * 2.2, p[1] * 2.2, roman_hours[hour],
+            ha='center', va='center', fontsize=9)
 
 
 # křivky (pro fixní deklinaci δ)
@@ -144,18 +148,8 @@ ax.plot([0, g2[0]], [0, g2[1]], 'r-', linewidth=2)
 
 ax.set_title("Stěna (front view)")
 ax.set_aspect('equal')
-if len(all_front_points) > 0:
-    all_pts = np.vstack(all_front_points + [np.array([[0, 0], g2])])
-    x_min, y_min = np.min(all_pts, axis=0)
-    x_max, y_max = np.max(all_pts, axis=0)
-
-    margin_x = max(0.2, 0.1 * (x_max - x_min))
-    margin_y = max(0.2, 0.1 * (y_max - y_min))
-    ax.set_xlim(x_min - margin_x, x_max + margin_x)
-    ax.set_ylim(y_min - margin_y, y_max + margin_y)
-else:
-    ax.set_xlim(-2,2)
-    ax.set_ylim(-2,2)
+ax.set_xlim(-3, 3)
+ax.set_ylim(-3, 3)
 ax.axhline(0, linewidth=0.5)
 ax.axvline(0, linewidth=0.5)
 ax.legend()
