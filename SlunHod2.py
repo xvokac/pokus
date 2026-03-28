@@ -97,6 +97,7 @@ for h in range(-6, 7):
 
 
 # křivky (pro fixní deklinaci δ)
+all_front_points = []
 for d, name in [(-23.44, "Zima"),
                 (0.0, "Rovnodennost"),
                 (23.44, "Léto")]:
@@ -113,24 +114,27 @@ for d, name in [(-23.44, "Zima"),
     if len(pts) > 2:
         pts = np.array(pts)
         ax.plot(pts[:,0], pts[:,1], label=name)
+        all_front_points.append(pts)
 
-# horizont: body, kdy je výška Slunce 0°.
+# horizont: body pro východ/západ (výška Slunce = 0°) a reálné deklinace.
 horizon_pts = []
-for h in np.linspace(-179.5, 179.5, 2000):
-    H = np.deg2rad(h)
-    if abs(np.cos(H)) < 1e-6:
+for d in np.linspace(-23.44, 23.44, 800):
+    delta = np.deg2rad(d)
+    arg = -np.tan(phi) * np.tan(delta)
+    if arg < -1 or arg > 1:
         continue
-    delta = np.arctan(-np.cos(phi) * np.cos(H) / np.sin(phi))
-    P = shadow_point(H, delta)
-    if P is None:
-        continue
-    if sun_vector(H, delta)[1] >= 0:
-        continue
-    horizon_pts.append(to2D(P))
+
+    H0 = np.arccos(arg)
+    for H in (-H0, H0):
+        P = shadow_point(H, delta)
+        if P is None:
+            continue
+        horizon_pts.append(to2D(P))
 
 if len(horizon_pts) > 2:
     horizon_pts = np.array(horizon_pts)
     ax.plot(horizon_pts[:,0], horizon_pts[:,1], label="Horizont")
+    all_front_points.append(horizon_pts)
 
 # gnómon
 g2 = to2D(G)
@@ -138,8 +142,18 @@ ax.plot([0, g2[0]], [0, g2[1]], 'r-', linewidth=2)
 
 ax.set_title("Stěna (front view)")
 ax.set_aspect('equal')
-ax.set_xlim(-2,2)
-ax.set_ylim(-2,2)
+if len(all_front_points) > 0:
+    all_pts = np.vstack(all_front_points + [np.array([[0, 0], g2])])
+    x_min, y_min = np.min(all_pts, axis=0)
+    x_max, y_max = np.max(all_pts, axis=0)
+
+    margin_x = max(0.2, 0.1 * (x_max - x_min))
+    margin_y = max(0.2, 0.1 * (y_max - y_min))
+    ax.set_xlim(x_min - margin_x, x_max + margin_x)
+    ax.set_ylim(y_min - margin_y, y_max + margin_y)
+else:
+    ax.set_xlim(-2,2)
+    ax.set_ylim(-2,2)
 ax.axhline(0, linewidth=0.5)
 ax.axvline(0, linewidth=0.5)
 ax.legend()
