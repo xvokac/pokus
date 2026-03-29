@@ -352,7 +352,7 @@ if len(analemma_day_pts) > 2:
     # položky legendy
     ax.plot([], [], color="tab:blue", linewidth=1.8, label="Čas. rovnice: zima")
     ax.plot([], [], color="tab:red", linewidth=1.8, label="Čas. rovnice: léto")
-    ax.plot([], [], color="gold", linewidth=1.8, label="Čas. rovnice: přechod")
+    ax.plot([], [], color="gold", linewidth=1.8, label="Čas. rovnice: jaro/podzim")
 
 # gnómon
 g2 = to2D(G)
