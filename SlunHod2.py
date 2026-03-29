@@ -473,21 +473,27 @@ if export_dxf_path:
     else:
         min_x, max_x, min_y = -1.0, 1.0, -1.0
     width = max(1.0, max_x - min_x)
+    text_height = max(0.10, 0.03 * width)
+    line_gap = 1.35 * text_height
+    top_margin = 1.8 * text_height
     base_x = min_x
-    base_y = min_y - 0.35
-    line_gap = 0.22
+    base_y = min_y - top_margin
 
     metadata = [
         f"Vstup: zemepisna sirka = {lat_deg:.6f} deg",
         f"Vstup: azimut steny = {azimuth_deg:.6f} deg",
         f"Vstup: delka gnomu = {gnomon_length:.6f}",
         (
-            "Vrchol gnomu vzhledem k pate (x,y,z) = "
+            "Vrchol gnomu vzhledem k pate v globalni ENU soustave (x,y,z) = "
             f"({G[0]:.6f}, {G[1]:.6f}, {G[2]:.6f})"
+        ),
+        (
+            "Vrchol gnomu vzhledem ke stene (u,v,n) = "
+            f"({np.dot(G, u):.6f}, {-np.dot(G, v):.6f}, {np.dot(G, n):.6f})"
         ),
     ]
     for i, text in enumerate(metadata):
-        dxf_texts.append((base_x, base_y - i * line_gap, max(0.10, 0.03 * width), text))
+        dxf_texts.append((base_x, base_y - i * line_gap, text_height, text))
 
     write_dxf_wall_view(export_dxf_path, dxf_lines, dxf_texts)
     print(f"DXF export uložen: {export_dxf_path}")
