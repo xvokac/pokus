@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,32 +13,46 @@ def parse_args(argv):
     default_lat = 50.0
     default_azimuth = 0.0
     default_gnomon_length = 1.0
+    export_dxf_path = None
 
-    if len(argv) in (3, 4):
+    args = argv[1:]
+    if "--export-dxf" in args:
+        idx = args.index("--export-dxf")
+        if idx + 1 >= len(args):
+            print("Chybí cesta k výstupnímu DXF souboru za --export-dxf.")
+        else:
+            export_dxf_path = args[idx + 1]
+            del args[idx:idx + 2]
+
+    if len(args) in (2, 3):
         try:
-            lat = float(argv[1])
-            azimuth = float(argv[2])
-            gnomon_length = float(argv[3]) if len(argv) == 4 else default_gnomon_length
-            return lat, azimuth, gnomon_length
+            lat = float(args[0])
+            azimuth = float(args[1])
+            gnomon_length = float(args[2]) if len(args) == 3 else default_gnomon_length
+            return lat, azimuth, gnomon_length, export_dxf_path
         except ValueError:
             print("Neplatné argumenty – očekávám čísla.")
-    elif len(argv) != 1:
+    elif len(args) != 0:
         print("Špatný počet argumentů.")
 
-    print("Použití: python SlunHod2.py <zeměpisná_šířka_N> <azimut_stěny> [délka_gnómu]")
+    print(
+        "Použití: python SlunHod2.py <zeměpisná_šířka_N> <azimut_stěny> "
+        "[délka_gnómu] [--export-dxf output_file.dxf]"
+    )
     print("  <zeměpisná_šířka_N>: severní zeměpisná šířka ve stupních (např. 49.5)")
     print("  <azimut_stěny>: azimut stěny ve stupních, 0 = jih,")
     print("                  kladné hodnoty směrem k západu, záporné k východu")
     print("  [délka_gnómu]: délka gnómu (volitelné, implicitně 1)")
+    print("  [--export-dxf output_file.dxf]: export pohledu na stěnu do DXF")
     print(
         "Spouštím s implicitními hodnotami: "
         f"{default_lat}, {default_azimuth} a {default_gnomon_length}.\n"
     )
 
-    return default_lat, default_azimuth, default_gnomon_length
+    return default_lat, default_azimuth, default_gnomon_length, export_dxf_path
 
 
-lat_deg, azimuth_deg, gnomon_length = parse_args(sys.argv)
+lat_deg, azimuth_deg, gnomon_length, export_dxf_path = parse_args(sys.argv)
 
 phi = np.deg2rad(lat_deg)   # zeměpisná šířka
 D   = np.deg2rad(azimuth_deg)   # azimut stěny (0 = jih)
@@ -98,6 +113,55 @@ def to2D(P):
     x = np.dot(P, u)
     y = -np.dot(P, v)
     return np.array([x, y])
+
+
+def write_dxf_wall_view(path, line_entities, text_entities):
+    """Minimalistický ASCII DXF export (R12) pro 2D čáry a text."""
+    lines = [
+        "0", "SECTION",
+        "2", "HEADER",
+        "0", "ENDSEC",
+        "0", "SECTION",
+        "2", "TABLES",
+        "0", "TABLE",
+        "2", "LAYER",
+        "70", "1",
+        "0", "LAYER",
+        "2", "0",
+        "70", "0",
+        "62", "7",
+        "6", "CONTINUOUS",
+        "0", "ENDTAB",
+        "0", "ENDSEC",
+        "0", "SECTION",
+        "2", "ENTITIES",
+    ]
+
+    for x1, y1, x2, y2 in line_entities:
+        lines.extend([
+            "0", "LINE",
+            "8", "0",
+            "10", f"{x1:.10f}",
+            "20", f"{y1:.10f}",
+            "30", "0.0",
+            "11", f"{x2:.10f}",
+            "21", f"{y2:.10f}",
+            "31", "0.0",
+        ])
+
+    for x, y, height, value in text_entities:
+        lines.extend([
+            "0", "TEXT",
+            "8", "0",
+            "10", f"{x:.10f}",
+            "20", f"{y:.10f}",
+            "30", "0.0",
+            "40", f"{height:.10f}",
+            "1", value,
+        ])
+
+    lines.extend(["0", "ENDSEC", "0", "EOF"])
+    Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 # =========================
 # SLUNCE
@@ -183,6 +247,8 @@ fig_side, ax_side = plt.subplots(figsize=(6, 6))
 # =========================
 ax = ax_wall
 displayed_hour_angles_deg = []
+dxf_lines = []
+dxf_texts = []
 
 def to_roman(number):
     vals = [
@@ -278,11 +344,13 @@ for hour in range(1, 24):
     endpoint = ray_dir * t_end
 
     ax.plot([0.0, endpoint[0]], [0.0, endpoint[1]], 'k-')
+    dxf_lines.append((0.0, 0.0, endpoint[0], endpoint[1]))
     displayed_hour_angles_deg.append(np.rad2deg(H))
 
     label_pos = endpoint * 1.05
     ax.text(label_pos[0], label_pos[1], to_roman(hour),
             ha='center', va='center', fontsize=9)
+    dxf_texts.append((label_pos[0], label_pos[1], 0.14, to_roman(hour)))
 
 
 # Rozsah hodin pro doplňkové křivky odvodíme z hodin skutečně zobrazených
@@ -312,6 +380,8 @@ for d, name in [(-23.44, "Zima"),
     if len(pts) > 2:
         pts = np.array(pts)
         ax.plot(pts[:,0], pts[:,1], label=name)
+        for i in range(len(pts) - 1):
+            dxf_lines.append((pts[i, 0], pts[i, 1], pts[i + 1, 0], pts[i + 1, 1]))
         all_front_points.append(pts)
 
 # horizont: body pro východ/západ (výška Slunce = 0°) a reálné deklinace.
@@ -335,6 +405,11 @@ for d in np.linspace(-23.44, 23.44, 800):
 if len(horizon_pts) > 2:
     horizon_pts = np.array(horizon_pts)
     ax.plot(horizon_pts[:,0], horizon_pts[:,1], label="Horizont")
+    for i in range(len(horizon_pts) - 1):
+        dxf_lines.append((
+            horizon_pts[i, 0], horizon_pts[i, 1],
+            horizon_pts[i + 1, 0], horizon_pts[i + 1, 1]
+        ))
     all_front_points.append(horizon_pts)
 
 # osmička časové rovnice (analema) na hodinové čáře XII
@@ -366,6 +441,7 @@ if len(analemma_day_pts) > 2:
             color=color,
             linewidth=1.8,
         )
+        dxf_lines.append((p_a[0], p_a[1], p_b[0], p_b[1]))
         segment_points.extend([p_a, p_b])
 
     if segment_points:
@@ -379,6 +455,7 @@ if len(analemma_day_pts) > 2:
 # gnómon
 g2 = to2D(G)
 ax.plot([0, g2[0]], [0, g2[1]], 'r-', linewidth=2)
+dxf_lines.append((0.0, 0.0, g2[0], g2[1]))
 
 ax.set_title("Stěna (pohled)")
 ax.set_aspect('equal')
@@ -387,6 +464,33 @@ ax.set_ylim(-4, 4)
 ax.axhline(0, linewidth=0.5)
 ax.axvline(0, linewidth=0.5)
 ax.legend()
+
+if export_dxf_path:
+    if dxf_lines:
+        min_x = min(min(x1, x2) for x1, _, x2, _ in dxf_lines)
+        max_x = max(max(x1, x2) for x1, _, x2, _ in dxf_lines)
+        min_y = min(min(y1, y2) for _, y1, _, y2 in dxf_lines)
+    else:
+        min_x, max_x, min_y = -1.0, 1.0, -1.0
+    width = max(1.0, max_x - min_x)
+    base_x = min_x
+    base_y = min_y - 0.35
+    line_gap = 0.22
+
+    metadata = [
+        f"Vstup: zemepisna sirka = {lat_deg:.6f} deg",
+        f"Vstup: azimut steny = {azimuth_deg:.6f} deg",
+        f"Vstup: delka gnomu = {gnomon_length:.6f}",
+        (
+            "Vrchol gnomu vzhledem k pate (x,y,z) = "
+            f"({G[0]:.6f}, {G[1]:.6f}, {G[2]:.6f})"
+        ),
+    ]
+    for i, text in enumerate(metadata):
+        dxf_texts.append((base_x, base_y - i * line_gap, max(0.10, 0.03 * width), text))
+
+    write_dxf_wall_view(export_dxf_path, dxf_lines, dxf_texts)
+    print(f"DXF export uložen: {export_dxf_path}")
 
 # =========================
 # 2️⃣ PŮDORYS (TOP VIEW)
