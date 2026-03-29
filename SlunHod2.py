@@ -314,21 +314,28 @@ for d, name in [(-23.44, "Zima"),
         ax.plot(pts[:,0], pts[:,1], label=name)
         all_front_points.append(pts)
 
-# horizont: přímka průsečnice stěny s horizontální rovinou (z = 0).
-# Jde vždy o přímku procházející počátkem; vykreslíme ji přes celý graf.
-horizon_dir_3d = np.cross(n, np.array([0.0, 0.0, 1.0]))
-horizon_dir_2d = to2D(horizon_dir_3d)
-horizon_norm = np.linalg.norm(horizon_dir_2d)
-if horizon_norm > 1e-12:
-    horizon_dir_2d /= horizon_norm
-    ax.axline(
-        (0.0, 0.0),
-        (horizon_dir_2d[0], horizon_dir_2d[1]),
-        color="C3",
-        linestyle="-",
-        linewidth=1.5,
-        label="Horizont",
-    )
+# horizont: body pro východ/západ (výška Slunce = 0°) a reálné deklinace.
+horizon_pts = []
+for d in np.linspace(-23.44, 23.44, 800):
+    delta = np.deg2rad(d)
+    arg = -np.tan(phi) * np.tan(delta)
+    if arg < -1 or arg > 1:
+        continue
+
+    H0 = np.arccos(arg)
+    for H in (-H0, H0):
+        H_deg = np.rad2deg(H)
+        if H_deg < min_hour_angle_deg or H_deg > max_hour_angle_deg:
+            continue
+        P = shadow_point(H, delta)
+        if P is None:
+            continue
+        horizon_pts.append(to2D(P))
+
+if len(horizon_pts) > 2:
+    horizon_pts = np.array(horizon_pts)
+    ax.plot(horizon_pts[:,0], horizon_pts[:,1], label="Horizont")
+    all_front_points.append(horizon_pts)
 
 # osmička časové rovnice (analema) na hodinové čáře XII
 analemma_day_pts = []
