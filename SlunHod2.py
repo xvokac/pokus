@@ -200,16 +200,37 @@ def to_roman(number):
 
 
 def is_hour_visible(hour):
-    """Vrací True, pokud se hodinová čára může během roku objevit na stěně."""
+    """Vrací True, pokud se hodinová čára může během roku objevit na stěně.
+
+    Poznámka:
+    Pro VI/XVIII na jižní stěně (D = 0) je stín při rovnodennosti v nekonečnu
+    (paprsek je rovnoběžný se stěnou). V grafu je ale chceme ponechat jako
+    hraniční hodinové čáry, proto sledujeme i tento limitní případ.
+    """
     H = np.deg2rad(15 * (hour - 12))
+    has_grazing_case = False
     for delta_deg in np.linspace(-23.44, 23.44, 361):
         delta = np.deg2rad(delta_deg)
         S = sun_vector(H, delta)
-        # Slunce musí být nad horizontem.
-        if S[2] <= 0:
+
+        # Slunce musí být alespoň na horizontu (pro limitní případ).
+        if S[2] < 0:
             continue
-        if shadow_point(H, delta) is not None:
+
+        denom = np.dot(n, S)
+        if abs(denom) < 1e-12:
+            has_grazing_case = True
+            continue
+
+        # Průsečík je v přední polorovině stěny.
+        t = -np.dot(n, G) / denom
+        if t > 0:
             return True
+
+    # Limitní viditelnost: typicky VI/XVIII pro D≈0.
+    if has_grazing_case and np.isclose(np.sin(D), 0.0, atol=1e-12):
+        return True
+
     return False
 
 for hour in range(1, 24):
