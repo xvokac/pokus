@@ -240,7 +240,7 @@ for hour in range(1, 24):
     # Vykreslujeme jen čáry směřující převážně do dolní poloviny ciferníku.
     # Malá tolerance (y < 0.1) pomůže zobrazit i téměř vodorovné čáry
     # kolem VI/XVIII pro azimut 0.
-    if ray_dir[1] >= -0.1:
+    if ray_dir[1] >= 0.1:
         continue
     if not is_hour_visible(hour):
         continue
