@@ -483,7 +483,7 @@ ax.axvline(0, linewidth=0.5)
 ax.legend()
 
 metadata = build_metadata_lines(lat_deg, azimuth_deg, gnomon_length, G, u, v, n)
-print("Metadata použitá do DXF:")
+print("Metadata:")
 for line in metadata:
     print(f"  {line}")
 
