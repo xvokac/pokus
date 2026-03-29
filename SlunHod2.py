@@ -129,6 +129,35 @@ def shadow_point(H, delta):
     return G + t * S
 
 
+def solar_declination_and_eot(day_of_year):
+    """Vrátí (deklinace, časová rovnice) pro daný den v roce.
+
+    day_of_year: 1..365
+    deklinace v radiánech, časová rovnice v minutách.
+    Použitá je standardní aproximace NOAA.
+    """
+    gamma = 2.0 * np.pi * (day_of_year - 1) / 365.0
+
+    delta = (
+        0.006918
+        - 0.399912 * np.cos(gamma)
+        + 0.070257 * np.sin(gamma)
+        - 0.006758 * np.cos(2.0 * gamma)
+        + 0.000907 * np.sin(2.0 * gamma)
+        - 0.002697 * np.cos(3.0 * gamma)
+        + 0.00148 * np.sin(3.0 * gamma)
+    )
+
+    eot_minutes = 229.18 * (
+        0.000075
+        + 0.001868 * np.cos(gamma)
+        - 0.032077 * np.sin(gamma)
+        - 0.014615 * np.cos(2.0 * gamma)
+        - 0.040849 * np.sin(2.0 * gamma)
+    )
+    return delta, eot_minutes
+
+
 
 # =========================
 # FIGURY
@@ -273,6 +302,32 @@ if len(horizon_pts) > 2:
     horizon_pts = np.array(horizon_pts)
     ax.plot(horizon_pts[:,0], horizon_pts[:,1], label="Horizont")
     all_front_points.append(horizon_pts)
+
+# osmička časové rovnice (analema) na hodinové čáře XII
+analemma_pts = []
+for day in range(1, 366):
+    delta, eot_min = solar_declination_and_eot(day)
+    # V 12:00 středního slunečního času je hodinový úhel
+    # roven odchylce časové rovnice.
+    H = np.deg2rad(0.25 * eot_min)
+    S = sun_vector(H, delta)
+    if S[2] <= 0:
+        continue
+    P = shadow_point(H, delta)
+    if P is None:
+        continue
+    analemma_pts.append(to2D(P))
+
+if len(analemma_pts) > 2:
+    analemma_pts = np.array(analemma_pts)
+    ax.plot(
+        analemma_pts[:,0],
+        analemma_pts[:,1],
+        color="tab:purple",
+        linewidth=1.8,
+        label="Časová rovnice (XII)",
+    )
+    all_front_points.append(analemma_pts)
 
 # gnómon
 g2 = to2D(G)
