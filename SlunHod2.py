@@ -163,6 +163,23 @@ def write_dxf_wall_view(path, line_entities, text_entities):
     lines.extend(["0", "ENDSEC", "0", "EOF"])
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+
+def build_metadata_lines(lat_deg, azimuth_deg, gnomon_length, G, u, v, n):
+    """Vrátí metadata používaná v DXF i na standardní výstup."""
+    return [
+        f"Vstup: zemepisna sirka = {lat_deg:.6f} deg",
+        f"Vstup: azimut steny = {azimuth_deg:.6f} deg",
+        f"Vstup: delka gnomu = {gnomon_length:.6f}",
+        (
+            "Vrchol gnomu vzhledem k pate v globalni ENU soustave (x,y,z) = "
+            f"({G[0]:.6f}, {G[1]:.6f}, {G[2]:.6f})"
+        ),
+        (
+            "Vrchol gnomu vzhledem ke stene (u,v,n) = "
+            f"({np.dot(G, u):.6f}, {-np.dot(G, v):.6f}, {np.dot(G, n):.6f})"
+        ),
+    ]
+
 # =========================
 # SLUNCE
 # =========================
@@ -479,19 +496,10 @@ if export_dxf_path:
     base_x = min_x
     base_y = min_y - top_margin
 
-    metadata = [
-        f"Vstup: zemepisna sirka = {lat_deg:.6f} deg",
-        f"Vstup: azimut steny = {azimuth_deg:.6f} deg",
-        f"Vstup: delka gnomu = {gnomon_length:.6f}",
-        (
-            "Vrchol gnomu vzhledem k pate v globalni ENU soustave (x,y,z) = "
-            f"({G[0]:.6f}, {G[1]:.6f}, {G[2]:.6f})"
-        ),
-        (
-            "Vrchol gnomu vzhledem ke stene (u,v,n) = "
-            f"({np.dot(G, u):.6f}, {-np.dot(G, v):.6f}, {np.dot(G, n):.6f})"
-        ),
-    ]
+    metadata = build_metadata_lines(lat_deg, azimuth_deg, gnomon_length, G, u, v, n)
+    print("Metadata exportu:")
+    for line in metadata:
+        print(f"  {line}")
     for i, text in enumerate(metadata):
         dxf_texts.append((base_x, base_y - i * line_gap, text_height, text))
 
