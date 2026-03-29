@@ -237,9 +237,10 @@ for hour in range(1, 24):
         sign = 1.0 if p[0] > 0 else -1.0
 
     ray_dir = sign * p
-    # Vykreslujeme jen čáry směřující do dolní poloviny ciferníku (y < 0)
-    # a jen ty, které mohou být během roku reálně osvětlené.
-    if ray_dir[1] >= 0:
+    # Vykreslujeme jen čáry směřující převážně do dolní poloviny ciferníku.
+    # Malá tolerance (y < 0.1) pomůže zobrazit i téměř vodorovné čáry
+    # kolem VI/XVIII pro azimut 0.
+    if ray_dir[1] >= 0.1:
         continue
     if not is_hour_visible(hour):
         continue
