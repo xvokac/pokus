@@ -158,6 +158,18 @@ def solar_declination_and_eot(day_of_year):
     return delta, eot_minutes
 
 
+def analemma_color(day_of_year):
+    """Barva osmičky časové rovnice podle ročního období."""
+    # Přibližné dny v roce (nepřestupný rok):
+    # jarní rovnodennost ≈ 79, letní slunovrat ≈ 172,
+    # podzimní rovnodennost ≈ 266, zimní slunovrat ≈ 355.
+    if day_of_year >= 355 or day_of_year <= 79:
+        return "tab:blue"    # zima: zimní slunovrat -> jarní rovnodennost
+    if 172 <= day_of_year <= 266:
+        return "tab:red"     # léto: letní slunovrat -> podzimní rovnodennost
+    return "gold"            # přechodné části: neutrální žlutá
+
+
 
 # =========================
 # FIGURY
@@ -304,7 +316,7 @@ if len(horizon_pts) > 2:
     all_front_points.append(horizon_pts)
 
 # osmička časové rovnice (analema) na hodinové čáře XII
-analemma_pts = []
+analemma_day_pts = []
 for day in range(1, 366):
     delta, eot_min = solar_declination_and_eot(day)
     # V 12:00 středního slunečního času je hodinový úhel
@@ -316,18 +328,31 @@ for day in range(1, 366):
     P = shadow_point(H, delta)
     if P is None:
         continue
-    analemma_pts.append(to2D(P))
+    analemma_day_pts.append((day, to2D(P)))
 
-if len(analemma_pts) > 2:
-    analemma_pts = np.array(analemma_pts)
-    ax.plot(
-        analemma_pts[:,0],
-        analemma_pts[:,1],
-        color="tab:purple",
-        linewidth=1.8,
-        label="Časová rovnice (XII)",
-    )
-    all_front_points.append(analemma_pts)
+if len(analemma_day_pts) > 2:
+    segment_points = []
+    for i in range(len(analemma_day_pts) - 1):
+        day_a, p_a = analemma_day_pts[i]
+        day_b, p_b = analemma_day_pts[i + 1]
+        if day_b - day_a != 1:
+            continue
+        color = analemma_color(day_a)
+        ax.plot(
+            [p_a[0], p_b[0]],
+            [p_a[1], p_b[1]],
+            color=color,
+            linewidth=1.8,
+        )
+        segment_points.extend([p_a, p_b])
+
+    if segment_points:
+        all_front_points.append(np.array(segment_points))
+
+    # položky legendy
+    ax.plot([], [], color="tab:blue", linewidth=1.8, label="Čas. rovnice: zima")
+    ax.plot([], [], color="tab:red", linewidth=1.8, label="Čas. rovnice: léto")
+    ax.plot([], [], color="gold", linewidth=1.8, label="Čas. rovnice: přechod")
 
 # gnómon
 g2 = to2D(G)
