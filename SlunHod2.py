@@ -482,6 +482,11 @@ ax.axhline(0, linewidth=0.5)
 ax.axvline(0, linewidth=0.5)
 ax.legend()
 
+metadata = build_metadata_lines(lat_deg, azimuth_deg, gnomon_length, G, u, v, n)
+print("Metadata použitá do DXF:")
+for line in metadata:
+    print(f"  {line}")
+
 if export_dxf_path:
     if dxf_lines:
         min_x = min(min(x1, x2) for x1, _, x2, _ in dxf_lines)
@@ -496,10 +501,6 @@ if export_dxf_path:
     base_x = min_x
     base_y = min_y - top_margin
 
-    metadata = build_metadata_lines(lat_deg, azimuth_deg, gnomon_length, G, u, v, n)
-    print("Metadata exportu:")
-    for line in metadata:
-        print(f"  {line}")
     for i, text in enumerate(metadata):
         dxf_texts.append((base_x, base_y - i * line_gap, text_height, text))
 
